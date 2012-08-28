@@ -15,11 +15,50 @@ struct _hook {
   void *func;
 };
 
+static int my_pthread_create(pthread_t *thread, const pthread_attr_t *__attr,
+    void *(*start_routine)(void*), void *arg)
+{
+  pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+  return pthread_create(thread, realattr,start_routine,arg);
+
+}
+
+static int my_pthread_attr_destroy(pthread_attr_t *__attr)
+{
+  pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+  return pthread_attr_destroy(realattr);
+}
+
+static int my_pthread_attr_setdetachstate(pthread_attr_t *__attr, int detachstate)
+{
+  pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+  return pthread_attr_setdetachstate(realattr, detachstate);
+}
+
+
+static int my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stacksize)
+{
+
+  pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+  return pthread_attr_setstacksize (realattr,stacksize);
+}
+
+static int my_pthread_attr_init(pthread_attr_t *__attr) 
+{
+  pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+
+  realattr = malloc(sizeof(pthread_attr_t));
+  *((int *)__attr) = (int) realattr;
+
+  return pthread_attr_init(realattr);
+}
+
+
 static int my_pthread_mutex_init (pthread_mutex_t *__mutex, __const pthread_mutexattr_t *__mutexattr)
 {
   pthread_mutex_t *realmutex = malloc(sizeof(pthread_mutex_t));
   *((int *)__mutex) = (int) realmutex;
-  printf("init %x\n", __mutex);
+  //printf("init %x\n", __mutex);
   return pthread_mutex_init(realmutex, __mutexattr);
 }
 
@@ -186,7 +225,7 @@ static struct _hook hooks[] = {
   {"strcasecmp",strcasecmp}, 
   {"strncasecmp",strncasecmp},
 /* pthread.h */
-  {"pthread_create", pthread_create},
+  {"pthread_create", my_pthread_create},
   {"pthread_exit", pthread_exit},
   {"pthread_join", pthread_join},
   {"pthread_detach", pthread_detach},
@@ -209,7 +248,16 @@ static struct _hook hooks[] = {
   {"pthread_cond_signal", my_pthread_cond_signal},
   {"pthread_cond_wait", my_pthread_cond_wait},
   {"pthread_cond_timedwait", my_pthread_cond_timedwait},
-    {NULL, NULL},
+  {"pthread_attr_setstacksize", my_pthread_attr_setstacksize},
+  {"pthread_attr_destroy", my_pthread_attr_destroy},
+  {"pthread_attr_setdetachstate", my_pthread_attr_setdetachstate},
+  {"pthread_attr_init", my_pthread_attr_init},
+  {"pthread_rwlock_init", pthread_rwlock_init},
+  {"pthread_rwlock_destroy", pthread_rwlock_destroy},
+  {"pthread_rwlock_unlock", pthread_rwlock_unlock},
+  {"pthread_rwlock_wrlock", pthread_rwlock_wrlock},
+  {"pthread_rwlock_rdlock", pthread_rwlock_rdlock},
+  {NULL, NULL},
 };
 
 void *get_hooked_symbol(char *sym)
