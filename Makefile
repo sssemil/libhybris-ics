@@ -42,5 +42,6 @@ test_glesv2: libEGL.so.1 libGLESv2.so.2 egl/test.c libhybris_ics.so
 clean:
 	rm -rf libhybris_gingerbread.so test_gingerbread
 	rm -rf libhybris_ics.so test_ics
-	rm -rf test*
+	rm -rf libEGL* libGLESv2*
+	rm -rf test_*
 
