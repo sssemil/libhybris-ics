@@ -15,10 +15,42 @@ struct _hook {
   void *func;
 };
 
+/*static int my_pthread_condattr_setpshared(pthread_condattr_t *__attr,
+    int pshared) 
+{
+  pthread_condattr_t *realattr = (pthread_condattr_t *) *(int *) __attr;
+  printf("Realattr = %08x\n",realattr);
+
+  return pthread_condattr_setpshared(realattr, pshared);
+}
+
+static int my_pthread_condattr_destroy(pthread_condattr_t *__attr)
+{
+  pthread_condattr_t *realattr = (pthread_condattr_t *) *(int *) __attr;
+  printf("Realattr = %08x\n",realattr);
+  
+  return pthread_condattr_destroy(realattr);
+}
+
+static int my_pthread_condattr_init(pthread_condattr_t *__attr)
+{
+
+  printf("Hello\n");
+  pthread_condattr_t *realattr = (pthread_condattr_t *) *(int *) __attr;
+  printf("Realattr = %08x\n",realattr);
+
+  return pthread_condattr_init(realattr);
+}
+*/
+
 static int my_pthread_create(pthread_t *thread, const pthread_attr_t *__attr,
     void *(*start_routine)(void*), void *arg)
 {
-  pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+  pthread_attr_t *realattr = NULL;
+
+  if (__attr != NULL)
+    realattr = (pthread_attr_t *) *(int *) __attr;
+
   return pthread_create(thread, realattr,start_routine,arg);
 
 }
@@ -102,10 +134,19 @@ static int my_pthread_mutex_destroy (pthread_mutex_t *__mutex)
   return ret;
 }                               
 
+static int my_pthread_mutexattr_setpshared(pthread_mutexattr_t *__attr,
+       int pshared)
+{
+  pthread_mutexattr_t *realmutex = (pthread_mutexattr_t *) *(int *) __attr;
+
+  return pthread_mutexattr_setpshared(realmutex,pshared);
+}
+
 static int my_pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
 {
   pthread_cond_t *realcond = malloc(sizeof(pthread_cond_t));
   *((int *) cond) = (int) realcond;
+
   return pthread_cond_init(realcond, attr);    
 }
 
@@ -239,6 +280,7 @@ static struct _hook hooks[] = {
   {"pthread_mutexattr_init", pthread_mutexattr_init},
   {"pthread_mutexattr_settype", pthread_mutexattr_settype},
   {"pthread_mutex_trylock", my_pthread_mutex_trylock},   
+  {"pthread_mutexattr_setpshared", my_pthread_mutexattr_setpshared},
   {"pthread_key_create", pthread_key_create},
   {"pthread_setspecific", pthread_setspecific},
   {"pthread_getspecific", pthread_getspecific},
@@ -267,8 +309,10 @@ void *get_hooked_symbol(char *sym)
   
   while (ptr->name != NULL)
   {
-      if (strcmp(sym, ptr->name) == 0)
+    if (strcmp(sym, ptr->name) == 0){
+      //printf("Calling %s\n",sym);
         return ptr->func;
+    }
       ptr++;
   }
   if (strstr(sym, "pthread") != NULL)
